@@ -1,0 +1,56 @@
+.residence_info .t{
+	height: 30px;line-height: 30px;text-align: center;
+	background: #cdcdcd; color: white;font-size: 16px;
+}
+.residence_info label{
+	display: inline-block;width: 110px;text-align: right;
+}
+.residence_info  .item{
+	height: 30px; line-height: 30px;
+}
+.residence_info .item_last{
+	margin-top: 10px;
+}
+.residence_info .item_last img{
+	width:200px; height: 150px;
+}
+.selected_service_pack .t{
+	height: 30px;line-height: 30px;text-align: center;
+	background: #cdcdcd; color: white;font-size: 16px;
+}
+.selected_service_pack{
+	height: 320px;border-left: 1px solid #ddd;
+}
+.color_red{
+	color: red;
+}
+.clearfix{
+	overflow:hidden;_zoom:1;
+}
+.termination_reason{
+	border: 1px solid #ddd;margin-top: 20px;
+}
+.termination_reason .t{
+	height: 30px;line-height: 30px;text-align: center;
+	background: #cdcdcd; color: white;font-size: 16px;
+}
+
+.termination_reason .left_chk{
+	padding: 20px;
+}
+
+.termination_reason .right_fillin{
+	padding: 20px;
+}
+.confirm_termination{
+	border: 1px solid #ddd; margin: 20px 0;
+}
+.confirm_termination .t{
+	height: 30px;line-height: 30px;text-align: center;
+	background: #cdcdcd; color: white;font-size: 16px;
+}
+
+.confirm_termination .layui-form{
+	width: 500px; padding: 20px 0;
+}
+

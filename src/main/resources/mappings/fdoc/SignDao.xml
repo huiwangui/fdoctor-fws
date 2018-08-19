@@ -1,0 +1,517 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"      
+ "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+<mapper namespace="com.boco.modules.fdoc.dao.SignDao">
+
+    <sql id="Base_Column_List" >
+		id, doc_team_id, doc_org_name, doc_org_address, person_id, sign_img, sign_type, status, 
+		sign_time, remark,service_pack_value,due_time
+	</sql>
+
+    <sql id="relation_Column_List" >
+		sign.id, sign.doc_team_id, sign.doc_org_name, sign.doc_org_address, sign.person_id, sign.sign_img, sign.sign_type, sign.status, 
+		sign.sign_time, sign.remark,sign.service_pack_value,sign.due_time
+	</sql>
+	
+	<!-- 新增签约 -->
+	<insert id="insert" parameterType="com.boco.modules.fdoc.model.UserDocSignEntity" useGeneratedKeys="true" keyProperty="id">
+	    insert into t_user_doc_sign (id, doc_team_id, doc_org_name, 
+	      doc_org_address, person_id, sign_img, 
+	      sign_type, status, sign_time, 
+	      remark,service_pack_value,due_time)
+	    values (#{id,jdbcType=INTEGER}, #{docTeamId,jdbcType=VARCHAR}, #{docOrgName,jdbcType=VARCHAR}, 
+	      #{docOrgAddress,jdbcType=VARCHAR}, #{personId,jdbcType=VARCHAR}, #{signImg,jdbcType=VARCHAR}, 
+	      #{signType,jdbcType=VARCHAR}, #{status,jdbcType=VARCHAR}, #{signTime,jdbcType=TIMESTAMP}, 
+	      #{remark,jdbcType=VARCHAR},#{servicePackValue} ,#{dueTime})
+	 </insert>
+	 
+	 <!-- 新增签约协议 -->
+	 <insert id="insertAgreement" parameterType="com.boco.modules.fdoc.model.SignAgreementEntity" >
+	    insert into t_sign_agreement (sign_id, agreement_num, 
+	      sign_time, due_time, status, 
+	      cancle_time, service_pack_value, content
+	      )
+	    values (#{signId,jdbcType=INTEGER}, #{agreementNum,jdbcType=VARCHAR}, 
+	      #{signTime,jdbcType=TIMESTAMP}, #{dueTime,jdbcType=TIMESTAMP}, #{status,jdbcType=VARCHAR}, 
+	      #{cancleTime,jdbcType=TIMESTAMP}, #{servicePackValue,jdbcType=INTEGER}, #{content,jdbcType=LONGVARCHAR}
+	      )
+	  </insert>
+	 
+	 <!-- 获取区域内未签约的家庭户主，按照姓名查询（包含其他家庭成员姓名） -->
+	<select id="getNotSignMaster" parameterType="com.boco.modules.fdoc.vo.PersonInformationVo" resultType="com.boco.modules.fdoc.vo.PersonInformationVo">
+		SELECT
+			a.person_name,
+			a.sex,
+			a.unit,
+			a.family_id,
+			a.id_card,
+			DATE_FORMAT(
+				FROM_DAYS(
+					TO_DAYS(NOW()) - TO_DAYS(a.date_of_birth)
+				),
+				'%Y'
+			) + 0 AS age
+		FROM
+			t_person_information a
+		WHERE
+			a.master_flag = 1
+		AND a.if_sign != 1
+		AND 
+			a.region_code LIKE CONCAT(#{regionCode},'%')
+		<if test="personName != null and personName != ''">
+			AND a.family_id IN (
+				SELECT
+					family_id
+				FROM
+					t_person_information
+				WHERE
+					person_name LIKE CONCAT('%',#{personName},'%')
+			)
+		</if>
+	</select>
+	
+	 <!-- 获取区域内未签约的家庭户主总数，按照姓名查询（包含其他家庭成员姓名） -->
+	<select id="getNotSignMasterCount" parameterType="com.boco.modules.fdoc.vo.PersonInformationVo" resultType="integer">
+		SELECT
+			count(a.person_id)
+		FROM
+			t_person_information a
+		<!-- LEFT JOIN (
+			SELECT
+				  count(person_id) ct ,
+				family_id
+			FROM
+				t_person_information
+			GROUP BY
+				family_id
+		) b ON a.family_id = b.family_id -->
+		WHERE
+			a.master_flag = 1
+		AND a.if_sign != 1
+		AND 
+			a.region_code LIKE CONCAT(#{regionCode},'%')
+		<if test="personName != null and personName != ''">
+			AND a.family_id IN (
+				SELECT
+					family_id
+				FROM
+					t_person_information
+				WHERE
+					person_name LIKE CONCAT('%',#{personName},'%')
+			)
+		</if>
+	</select>
+	
+	<!-- 查询签约 -->
+	<select id="getFamilySign" parameterType="com.boco.modules.fdoc.model.UserDocSignEntity" resultType="com.boco.modules.fdoc.model.UserDocSignEntity">
+		SELECT
+			id,
+			doc_team_id,
+			doc_org_address,
+			doc_org_name,
+			family_id,
+			sign_img,
+			`status`
+		FROM
+			t_user_doc_sign
+		<where>
+			<choose>
+				<when test="familyId != null and familyId != ''">
+					family_id = #{familyId}
+				</when>
+				<when test="status != null and status != ''">
+					AND `status` = #{status}
+				</when>
+			</choose>
+		</where>
+	</select>
+	
+	<!-- 签约修改居民状态 -->
+	<update id="updateFamilySignFlag" parameterType="com.boco.modules.fdoc.model.PersonInformationEntity">
+		UPDATE t_person_information
+			SET if_sign = #{ifSign}
+		WHERE
+			family_id = #{familyId}
+	</update>
+	
+	<!-- 获取已签约列表 -->
+	<select id="getSignedList" parameterType="com.boco.modules.fdoc.vo.SignVo" resultType="com.boco.modules.fdoc.vo.PersonInformationVo">
+		SELECT
+			a.person_id,
+			a.person_code,
+			a.family_id,
+			a.person_name,
+			a.sex,
+			a.id_card,
+			a.date_of_birth,
+			a.phone_number,
+			DATE_FORMAT(
+				FROM_DAYS(
+					TO_DAYS(NOW()) - TO_DAYS(a.date_of_birth)
+				),
+				'%Y'
+			) + 0 AS age
+		FROM
+			t_person_information a
+		LEFT JOIN t_user_doc_sign b ON a.person_id = b.person_id
+		WHERE
+			b.doc_team_id = #{docTeamId}
+		AND b.`status` = 1
+		<if test="personName != null and personName != ''">
+			AND a.person_name LIKE CONCAT('%',#{personName},'%')
+		</if>
+	</select>
+	
+	<!-- 获取已签约人数 -->
+	<select id="getSignedCount" parameterType="com.boco.modules.fdoc.vo.SignVo" resultType="integer">
+		SELECT
+			count(a.person_id)
+		FROM
+			t_person_information a
+		LEFT JOIN t_user_doc_sign b ON a.person_id = b.person_id
+		LEFT JOIN t_hospital c ON c.org_name=b.doc_org_name
+		WHERE
+		 b.`status` = 1
+		<if test="personName != null and personName != ''">
+			AND a.person_name LIKE CONCAT('%',#{personName},'%')
+		</if>
+		<if test="docTeamId != null and docTeamId != ''">
+			AND b.doc_team_id = #{docTeamId}
+		</if>
+		<if test="regionCode != null and regionCode != ''">
+			AND c.region_code = #{regionCode}
+		</if>
+	</select>
+	
+	<!-- 获取已签约户数 -->
+	<select id="getSignedFamilyCount" parameterType="com.boco.modules.fdoc.vo.SignVo" resultType="integer">
+		SELECT
+			count(a.person_id)
+		FROM
+			(
+				SELECT
+					a.person_id
+				FROM
+					t_person_information a
+				LEFT JOIN t_user_doc_sign b ON a.person_id = b.person_id
+				WHERE
+					b.doc_team_id = #{docTeamId}
+				AND b.`status` = 1
+				<if test="familyId != null and familyId != ''">
+			    AND a.person_id=#{personId}
+				</if>
+				GROUP BY
+					a.person_id
+			) a
+	</select>
+	
+	<!-- 获取已签约家庭列表 -->
+	<select id="getSignedFamilyList" parameterType="com.boco.modules.fdoc.vo.SignVo" resultType="com.boco.modules.fdoc.vo.SignVo">
+		SELECT
+			a.id,
+			a.doc_team_id,
+			a.doc_org_name,
+			a.sign_img,
+			d.service_pack_value,
+			d.agreement_num,
+			d.sign_time,
+			d.due_time,
+			YEAR (d.due_time) - YEAR (d.sign_time) term,
+			a.sign_type,
+			a.person_id
+		FROM
+			t_user_doc_sign a
+		LEFT JOIN t_sign_agreement d ON a.id = d.sign_id
+		WHERE
+			a.doc_team_id = #{docTeamId}
+		AND 
+			a.status = 1
+		<if test="familyId != null and familyId != ''">
+			AND a.person_id=#{personId}
+		</if>
+		ORDER BY
+			d.sign_time DESC
+	</select>
+	
+	<!-- 查询签约详情 -->
+	<select id="getSignDetail" parameterType="integer" resultType="com.boco.modules.fdoc.vo.SignVo">
+		SELECT
+			<include refid="relation_Column_List"/>, a.person_id,
+			a.person_name,
+			a.jw_person_id,
+			a.sex,
+			a.id_card,
+			DATE_FORMAT(
+				FROM_DAYS(
+					TO_DAYS(NOW()) - TO_DAYS(a.date_of_birth)
+				),
+				'%Y'
+			) + 0 AS age,
+			a.phone_number,
+			a.wechat,
+			a.qq,
+			b.doc_name,
+			a.unit personUnit,
+			a.current_address
+		FROM
+			t_user_doc_sign sign
+		LEFT JOIN t_person_information a ON sign.person_id = a.person_id
+		LEFT JOIN t_doctor b ON sign.doc_team_id = b.team_id
+		WHERE
+			b.leader_flag = 1 AND
+			sign.id = #{0}
+	</select>
+	
+	<!-- 通过身份证号获取签约详情 -->
+	<select id="getSignDetailByIdCard" parameterType="string" resultType="com.boco.modules.fdoc.vo.SignVo">
+		SELECT
+			a.id,
+			a.doc_team_id,
+			a.doc_org_name,
+			a.sign_img,
+			d.service_pack_value,
+			d.agreement_num,
+			d.sign_time,
+			d.due_time,
+			YEAR (d.due_time) - YEAR (d.sign_time) term,
+			a.sign_type,
+			a.person_id,
+			c.doc_name
+		FROM
+			t_user_doc_sign a
+		LEFT JOIN t_sign_agreement d ON a.id = d.sign_id
+		LEFT JOIN (
+			SELECT
+				a.doc_name,
+				a.org_id,
+				a.team_id,
+				b.org_name
+			FROM
+				t_doctor a
+			LEFT JOIN t_hospital b ON a.org_id = b.id
+			WHERE
+				a.leader_flag = 1
+		limit 1) c ON a.doc_team_id = c.team_id
+		WHERE
+			a.person_id = (select person_id from t_person_information where id_card = #{0})
+		and a.`status` = '1' limit 1
+	</select>
+	
+	
+	<!-- 通过personId号获取签约详情 -->
+	<select id="getSignDetailBypersonId" parameterType="string" resultType="com.boco.modules.fdoc.vo.SignVo">
+		    SELECT
+		  sign.id, sign.doc_team_id, sign.doc_org_name, sign.doc_org_address, sign.person_id, sign.sign_img, sign.sign_type, sign.status, 
+		  sign.sign_time, sign.remark, a.person_id,
+		  YEAR (sign.due_time) - YEAR (sign.sign_time) term,
+			a.person_name,
+			a.jw_person_id,
+			a.sex,
+			a.id_card,
+			DATE_FORMAT(
+				FROM_DAYS(
+					TO_DAYS(NOW()) - TO_DAYS(a.date_of_birth)
+				),
+				'%Y'
+			) + 0 AS age,
+			a.phone_number,
+			a.wechat,
+			a.qq,
+			b.doc_name,
+			a.unit personUnit
+		FROM
+			t_user_doc_sign sign
+		LEFT JOIN t_person_information a ON sign.person_id = a.person_id
+		LEFT JOIN t_doctor b ON sign.doc_team_id = b.team_id
+		WHERE
+			b.leader_flag = 1 AND
+			a.person_id = #{0}
+	</select>
+	
+	<!-- 获取同某人签约的医生团队账号列表，用于推送 -->
+	<select id="getSignTeamUsers" parameterType="string" resultType="string">
+		SELECT
+			a.user_name
+		FROM
+			t_doctor_user a
+		LEFT JOIN t_doctor b ON a.doctor_id = b.id
+		LEFT JOIN t_user_doc_sign c ON b.team_id = c.doc_team_id
+		LEFT JOIN t_person_information d ON c.person_id = d.person_id
+		WHERE
+			d.person_id = #{0}
+		AND c.`status` = '1'
+	</select>
+	
+	<!-- 获取医生签约下的所有居民账号列表，用于推送 -->
+	<select id="getSignFamilyUsers" parameterType="string" resultType="string">
+		SELECT
+			a.uid
+		FROM
+			t_user a
+		LEFT JOIN t_person_information b ON a.person_id = b.person_id
+		LEFT JOIN t_user_doc_sign c ON b.person_id = c.person_id
+		LEFT JOIN t_doctor d ON c.doc_team_id = d.team_id
+		LEFT JOIN t_doctor_user e ON d.id = e.doctor_id
+		WHERE
+			e.user_name = #{0}
+		AND c.`status` = '1';
+	</select>
+	
+	<!-- 获取与某人签约的医生团队信息 -->
+	<select id="getSignDoctorTeamInfo" parameterType="string" resultType="com.boco.modules.fdoc.vo.DoctorDetailVo">
+		SELECT
+			a.*, b.org_name,
+			d.img,d.user_name,d.product_code
+		FROM
+			t_doctor a
+		LEFT JOIN t_hospital b ON a.org_id = b.id
+		LEFT JOIN t_user_doc_sign c ON a.team_id = c.doc_team_id
+		LEFT JOIN t_doctor_user d ON a.id = d.doctor_id
+		WHERE
+			c.person_id = #{0}
+			
+	</select>
+	
+	<!-- 获取区划内的签约列表 -->
+	<select id="getSignedCountByRegion" parameterType="com.boco.modules.fdoc.vo.SignVo" resultType="integer">
+		select count(person_id) from t_person_information
+		where if_sign = 1
+		<if test="regionCode != null and regionCode != ''">
+			and  region_code LIKE CONCAT(#{regionCode},'%')
+		</if>
+	</select>
+	
+	<!-- 获取医生已签约的用户app账号列表 -->
+	<select id="getSignedUserAccound" parameterType="com.boco.modules.fdoc.vo.SignVo" resultType="com.boco.modules.fdoc.vo.UserVo">
+		SELECT
+			a.uid,
+			b.person_name,
+			a.img,
+			a.mobile,
+			b.sex
+		FROM
+			t_user a
+		left JOIN t_person_information b ON a.person_id = b.person_id
+		left JOIN t_user_doc_sign c ON b.person_id = c.person_id
+		WHERE
+			c.doc_team_id = #{docTeamId}
+		<if test="personName != null and personName != ''">
+			AND b.person_name LIKE CONCAT('%',#{personName},'%')
+		</if>
+		
+	</select>
+	
+	
+	<!-- 获取医生已签约的用户app账号数量 --><!-- 接口不變，已經修改為已簽約的用戶 -->
+	<select id="getSignedUserAccoundCount" parameterType="com.boco.modules.fdoc.vo.SignVo" resultType="integer">
+		SELECT
+			count(a.uid)
+		FROM
+			t_user a
+		left JOIN t_person_information b ON a.person_id = b.person_id
+		left JOIN t_user_doc_sign c ON b.person_id = c.person_id
+		WHERE
+			c.doc_team_id = #{docTeamId}
+		<if test="personName != null and personName != ''">
+			AND b.person_name LIKE CONCAT('%',#{personName},'%')
+		</if>
+	</select>
+	<!-- 获取签约记录，包括签约请求的已拒绝和待确认 -->
+	<select id="getSignAndRequestList" parameterType="com.boco.modules.fdoc.vo.SignVo" resultType="com.boco.modules.fdoc.vo.SignVo">
+		SELECT id,a.person_id,a.`status`,CASE sex
+			WHEN '1' THEN '男'
+			WHEN '2' THEN '女'
+			ELSE '未知' END sex ,DATE_FORMAT(
+							FROM_DAYS(
+								TO_DAYS(NOW()) - TO_DAYS(date_of_birth)
+							),
+							'%Y'
+						) + 0 AS age ,current_address ,person_name FROM (SELECT id,doc_team_id,person_id ,CASE `status`WHEN '1' THEN '2' END `status` FROM t_user_doc_sign  WHERE `status`=1 
+			UNION ALL
+			SELECT id,doc_team_id,person_id,`status` FROM  t_sign_request WHERE `status`=1 
+			UNION ALL
+			SELECT id,doc_team_id,person_id,`status` FROM  t_sign_request WHERE `status`=3) a
+			LEFT JOIN t_person_information b ON a.person_id=b.person_id
+			WHERE doc_team_id=#{docTeamId}
+			      <if test="status !=null and status !='' ">
+			       and a.status=#{status}
+			      </if>
+			      <if test="personName !=null and personName !='' ">
+			       and person_name like CONCAT('%',#{personName},'%') 
+			      </if>
+	</select>
+	
+	<!-- 获取签约记录，包括签约请求的已拒绝和待确认总数 -->
+	<select id="getSignAndRequestListCount" parameterType="com.boco.modules.fdoc.vo.SignVo" resultType="integer">
+		SELECT count(*) FROM (SELECT id,doc_team_id,person_id ,CASE `status`WHEN '1' THEN '2' END `status` FROM t_user_doc_sign  WHERE `status`=1 
+			UNION ALL
+			SELECT id,doc_team_id,person_id,status FROM  t_sign_request WHERE `status`=1 
+			UNION ALL
+			SELECT id,doc_team_id,person_id,`status` FROM  t_sign_request WHERE `status`=3) a
+			LEFT JOIN t_person_information b ON a.person_id=b.person_id
+			WHERE doc_team_id=#{docTeamId}
+			      <if test="status !=null and status !='' ">
+			       and a.status=#{status}
+			      </if>
+			      <if test="personName !=null and personName !='' ">
+			       and person_name like CONCAT('%',#{personName},'%') 
+			      </if>
+	</select>
+	
+	<!-- 获取居民列表-未签约的 -->
+	<select id="getPersonListWithNoSignInfoCount" parameterType="com.boco.modules.fdoc.vo.PersonInformationVo" resultType="integer">
+		SELECT
+			count(*)
+		FROM
+			t_person_information a
+		LEFT JOIN t_user_doc_sign b ON a.person_id = b.person_id
+		<where>
+		    a.if_sign=0
+			<if test="personName != null and personName != ''">
+			and	a.person_name like CONCAT('%',#{personName},'%')
+			</if>
+		</where>
+	</select>
+	
+	<!-- 获取居民列表-未签约的 -->
+	<select id="getPersonListWithNoSignInfo" parameterType="com.boco.modules.fdoc.vo.PersonInformationVo" resultType="com.boco.modules.fdoc.vo.PersonInformationVo">
+		SELECT
+			a.person_id,
+			a.person_name,
+			a.sex,
+			a.current_address,
+			a.id_card,
+			a.phone_number,
+			(
+				YEAR (now()) - YEAR (a.date_of_birth) - 1
+			) + (
+				DATE_FORMAT(a.date_of_birth, '%m%d') &lt;= DATE_FORMAT(NOW(), '%m%d')
+			) AS age,
+			a.if_sign,
+			b.id signId,
+			a.jw_person_id
+		FROM
+			t_person_information a
+		LEFT JOIN t_user_doc_sign b ON a.person_id = b.person_id
+		<where>
+		    a.if_sign=0
+			<if test="personName != null and personName != ''">
+			and	a.person_name like CONCAT('%',#{personName},'%')
+			</if>
+		</where>
+	</select>
+	
+	<!-- 获取签约信息 -->
+	<select id="getSignRecord" parameterType="com.boco.modules.fdoc.model.UserDocSignEntity" resultType="com.boco.modules.fdoc.model.UserDocSignEntity">
+		select <include refid="Base_Column_List"/> from t_user_doc_sign
+		where person_id = #{personId} and doc_team_id = #{docTeamId}
+	</select>
+	
+	<!-- 签约修改居民状态 -->
+	<update id="updateSignFlag" parameterType="com.boco.modules.fdoc.model.PersonInformationEntity">
+		UPDATE t_person_information
+			SET if_sign = #{ifSign}
+		WHERE
+			person_id = #{personId}
+	</update>
+</mapper>

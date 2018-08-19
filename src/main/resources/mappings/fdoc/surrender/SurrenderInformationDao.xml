@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.boco.modules.fdoc.dao.surrender.SurrenderInformationDao" >
+
+  <sql id="Base_Column_List" >
+    id, request_id, region_code, org_id, service_pack_value, sign_img, sign_type, sign_remark, 
+    sign_time, due_time,expert_id
+  </sql>
+  <!-- 新增 -->
+   <insert id="insert" parameterType="com.boco.modules.fdoc.model.surrender.SurrenderInformationEntity" >
+    insert into t_surrender_information
+    <trim prefix="(" suffix=")" suffixOverrides="," >     
+      <if test="requestId != null" >
+        request_id,
+      </if>
+      <if test="regionCode != null and regionCode != ''" >
+        region_code,
+      </if>
+      <if test="orgId != null and orgId != ''" >
+        org_id,
+      </if>
+      <if test="servicePackValue != null" >
+        service_pack_value,
+      </if>
+      <if test="signImg != null and signImg != ''" >
+        sign_img,
+      </if>
+      <if test="signType != null and signType != ''" >
+        sign_type,
+      </if>
+      <if test="signRemark != null and signRemark != ''" >
+        sign_remark,
+      </if>
+      <if test="signTime != null" >
+        sign_time,
+      </if>
+      <if test="dueTime != null" >
+        due_time,
+      </if>
+      <if test="expertId != null" >
+        expert_id,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >    
+      <if test="requestId != null" >
+        #{requestId,jdbcType=INTEGER},
+      </if>
+      <if test="regionCode != null and regionCode != ''" >
+        #{regionCode,jdbcType=VARCHAR},
+      </if>
+      <if test="orgId != null and orgId != ''" >
+        #{orgId,jdbcType=VARCHAR},
+      </if>
+      <if test="servicePackValue != null" >
+        #{servicePackValue,jdbcType=INTEGER},
+      </if>
+      <if test="signImg != null and signImg != ''" >
+        #{signImg,jdbcType=VARCHAR},
+      </if>
+      <if test="signType != null and signType != ''" >
+        #{signType,jdbcType=VARCHAR},
+      </if>
+      <if test="signRemark != null and signRemark != ''" >
+        #{signRemark,jdbcType=VARCHAR},
+      </if>
+      <if test="signTime != null" >
+        #{signTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="dueTime != null" >
+        #{dueTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="expertId != null and expertId != ''" >
+        #{expertId,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <!-- 根据主键修改 -->
+   <update id="updateSurrenderInformationById" parameterType="com.boco.modules.fdoc.model.surrender.SurrenderInformationEntity" >
+    update t_surrender_information
+    <set >
+      <if test="requestId != null" >
+        request_id = #{requestId,jdbcType=INTEGER},
+      </if>
+      <if test="regionCode != null and regionCode != ''" >
+        region_code = #{regionCode,jdbcType=VARCHAR},
+      </if>
+      <if test="orgId != null and orgId != ''" >
+        org_id = #{orgId,jdbcType=VARCHAR},
+      </if>
+      <if test="servicePackValue != null" >
+        service_pack_value = #{servicePackValue,jdbcType=INTEGER},
+      </if>
+      <if test="signImg != null and signImg != ''" >
+        sign_img = #{signImg,jdbcType=VARCHAR},
+      </if>
+      <if test="signType != null and signType != ''" >
+        sign_type = #{signType,jdbcType=VARCHAR},
+      </if>
+      <if test="signRemark != null and signRemark != ''" >
+        sign_remark = #{signRemark,jdbcType=VARCHAR},
+      </if>
+      <if test="signTime != null" >
+        sign_time = #{signTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="dueTime != null" >
+        due_time = #{dueTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="expertId != null and signRemark != ''" >
+        expert_id = #{expertId,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  
+  <select id="getSurrenderDetailByRequestId" parameterType="integer" resultType="com.boco.modules.fdoc.vo.surrender.SurrenderInfomationVo">
+  	SELECT 
+  		s.*,p.person_name,
+  			p.sex,p.id_card,p.phone_number residentMobile,r.reason_value,r.reason_other,
+  			r.request_time,r.audit_time,r.audit_remark,
+  			YEAR (s.due_time) - YEAR (s.sign_time) term
+  	FROM t_surrender_information s
+  	LEFT JOIN t_surrender_request r on s.request_id=r.id
+	LEFT JOIN t_person_information p on p.person_id=r.person_id
+  	WHERE s.request_id=#{requestId}
+  </select>
+</mapper>

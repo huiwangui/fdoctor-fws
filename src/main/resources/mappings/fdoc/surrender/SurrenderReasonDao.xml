@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.boco.modules.fdoc.dao.surrender.SurrenderReasonDao" >
+ 
+  <select id="findAllReasonList"  resultType="com.boco.modules.fdoc.model.surrender.SurrenderReasonEntity">
+  SELECT id,reason_value,reason from t_surrender_reason
+  </select>
+  
+  	<!-- 根据权值获取列表 -->
+	<select id="getReasonPackByValues" parameterType="java.util.Map" resultType="com.boco.modules.fdoc.model.surrender.SurrenderReasonEntity">
+		SELECT id,reason_value,reason from t_surrender_reason
+		where reason_value in (${values})
+	</select>
+    
+</mapper>

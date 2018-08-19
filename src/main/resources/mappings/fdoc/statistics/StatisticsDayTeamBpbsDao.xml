@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"      
+ "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+<mapper namespace="com.boco.modules.fdoc.dao.statistics.StatisticsDayTeamBpbs">
+	
+	<!-- 获取最近一条统计信息 -->
+	<select id="getLastInfoByteamID" resultType="com.boco.modules.fdoc.model.statistics.StatisticsDayTeamBpbsEntity" parameterType="string">
+				SELECT
+			team_id,
+			high_bp_count,
+			low_bp_count,
+			normal_bp_count,
+			high_bs_count,
+			low_bs_count,
+			normal_bs_count,
+			statistics_date,
+			create_time
+		FROM
+			t_statistics_day_bpbs_team_basedata
+		WHERE
+			team_id = #{teamId}
+			order by statistics_date desc limit 1
+	</select>
+	
+	
+	<!-- 手动调用存储过程 -->
+	<select id="callStatisticsProcedure">
+		call procedure_bpbs()
+	</select>
+</mapper>
